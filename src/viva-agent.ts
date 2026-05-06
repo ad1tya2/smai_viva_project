@@ -46,6 +46,10 @@ interface VivaSession {
   questions: string[];
   currentIndex: number;
   sessionId: string;
+  /** Index into context.messages where the current question's conversation starts */
+  messageOffset: number;
+  /** Set to true when advancing questions; offset is applied at the start of the next onTurn */
+  pendingOffsetReset: boolean;
 }
 
 // --- System prompt helpers ---
@@ -405,7 +409,9 @@ export class VivaAgent extends VoiceAgentBase<Env> {
       topicContent: topic.content,
       questions,
       currentIndex: 0,
-      sessionId
+      sessionId,
+      messageOffset: 0,
+      pendingOffsetReset: false
     };
 
     connection.send(
@@ -418,7 +424,7 @@ export class VivaAgent extends VoiceAgentBase<Env> {
       })
     );
 
-    const initialGreeting = `Welcome to your SMAI viva on ${topic.title}. I have ${questions.length} topics to discuss with you today. Let's start with the first one.`;
+    const initialGreeting = `Welcome to your SMAI viva on ${topic.title}. I have ${questions.length} topics to discuss with you today.  Let's start with the first one. ${questions[0]}`;
     await this.streamAssistantSpeech(initialGreeting, connection);
   }
 
@@ -431,7 +437,16 @@ export class VivaAgent extends VoiceAgentBase<Env> {
 
     const viva = this.#viva;
 
-    console.log(`[VivaAgent] onTurn: Q${viva.currentIndex + 1} — transcript: "${transcript.slice(0, 100)}${transcript.length > 100 ? "..." : ""}"`);
+    console.log(`[VivaAgent] onTurn: Q${viva.currentIndex + 1
+      } — transcript: "${transcript.slice(0, 100)}${transcript.length > 100 ? "..." : ""}"`);
+
+    // If we just advanced to a new question, reset the message offset now
+    // so only this question's conversation reaches the LLM.
+    if (viva.pendingOffsetReset) {
+      viva.messageOffset = context.messages.length;
+      viva.pendingOffsetReset = false;
+      console.log(`[VivaAgent] Reset message offset to ${viva.messageOffset} for Q${viva.currentIndex + 1}`);
+    }
 
     const anthropic = createAnthropic({ apiKey: this.env.ANTHROPIC_API_KEY });
     const connection = context.connection;
@@ -462,8 +477,8 @@ export class VivaAgent extends VoiceAgentBase<Env> {
             role: "system",
             content: buildDynamicSystemPart(viva)
           },
-          // Conversation history
-          ...context.messages.map((m) => ({
+          // Conversation history (only from current question onward)
+          ...context.messages.slice(viva.messageOffset).map((m) => ({
             role: m.role as "user" | "assistant",
             content: m.content
           })),
@@ -520,6 +535,10 @@ export class VivaAgent extends VoiceAgentBase<Env> {
               );
 
               viva.currentIndex++;
+              // Flag that the next onTurn should reset the message offset.
+              // We do it there (not here) because we don't know exactly how many
+              // messages the mixin will save after this turn completes.
+              viva.pendingOffsetReset = true;
               const done = viva.currentIndex >= viva.questions.length;
 
               if (done) {

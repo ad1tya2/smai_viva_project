@@ -374,8 +374,8 @@ function FileDropZone({ onImported }: { onImported: (topics: Topic[]) => void })
   return (
     <div
       className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-all duration-200 cursor-pointer ${dragging
-          ? "border-kumo-brand bg-kumo-brand/5 scale-[1.01]"
-          : "border-kumo-line hover:border-kumo-brand/50 hover:bg-kumo-fill/40"
+        ? "border-kumo-brand bg-kumo-brand/5 scale-[1.01]"
+        : "border-kumo-line hover:border-kumo-brand/50 hover:bg-kumo-fill/40"
         }`}
       onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)}
@@ -560,7 +560,7 @@ function VivaPage({
 
   const [phase, setPhase] = useState<VivaPhase>("idle");
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [totalQuestions, setTotalQuestions] = useState(5);
+  const [totalQuestions, setTotalQuestions] = useState(0);
   const [liveResults, setLiveResults] = useState<LiveResult[]>([]);
   const [topicTitle, setTopicTitle] = useState<string>("");
 
@@ -581,8 +581,8 @@ function VivaPage({
         startOnLoad: true,
         baseAssetPath: "/vendor/vad/",
         onnxWASMBasePath: "/vendor/ort/",
-        positiveSpeechThreshold: 0.6,
-        minSpeechMs: 700,
+        positiveSpeechThreshold: 0.75,
+        minSpeechMs: 1000,
         onSpeechRealStart: () => {
           if (statusRef.current === "speaking") {
             console.log("MicVAD: User interrupted! Halting local playback.");
