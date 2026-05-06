@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-Content *)",
+      "Bash(npm install *)",
+      "WebFetch(domain:ai-sdk.dev)",
+      "WebFetch(domain:developers.cloudflare.com)"
+    ]
+  }
+}

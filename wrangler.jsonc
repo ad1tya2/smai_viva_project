@@ -1,0 +1,42 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "smai-viva",
+  "compatibility_date": "2026-01-28",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "main": "src/server.ts",
+  "ai": {
+    "binding": "AI",
+    "remote": true
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "class_name": "VivaAgent",
+        "name": "VivaAgent"
+      },
+      {
+        "class_name": "TopicsStore",
+        "name": "TopicsStore"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "new_sqlite_classes": [
+        "VivaAgent",
+        "TopicsStore"
+      ],
+      "tag": "v1"
+    }
+  ],
+  "assets": {
+    "not_found_handling": "single-page-application",
+    "run_worker_first": [
+      "/agents/*",
+      "/api/*"
+    ]
+  },
+  "vars": {}
+}
